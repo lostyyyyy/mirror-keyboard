@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyboard Mirror Cipher</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
+    <script>
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Keyboard Mirror Cipher
+            </h1>
+            <p class="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                Encode and decode text using keyboard letter mirroring
+            </p>
+            
+            <!-- Explanation -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8 text-left">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-3">How it works:</h2>
+                <p class="text-gray-700 dark:text-gray-300 mb-3">
+                    Imagine a vertical line down the middle of your keyboard. Letters are swapped with their mirror position:
+                </p>
+
+            </div>
+        </div>
+
+
+
+        <!-- Tab Navigation -->
+        <div class="mb-8">
+            <div class="flex border-b border-gray-200 dark:border-gray-700">
+                <button 
+                    onclick="switchTab('text')"
+                    id="textTab"
+                    class="tab-button tab-active px-6 py-3 font-semibold border-b-2 border-primary text-primary"
+                >
+                    📝 Text Input
+                </button>
+                <button 
+                    onclick="switchTab('image')"
+                    id="imageTab"
+                    class="tab-button px-6 py-3 font-semibold border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                    📸 Image Upload
+                </button>
+            </div>
+        </div>
+
+        <!-- Text Input Tab Content -->
+        <div id="textTabContent" class="tab-content">
+            <!-- Input/Output Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Input -->
+                <div class="space-y-4">
+                    <label class="block text-lg font-semibold text-gray-900 dark:text-white">
+                        Input Text
+                    </label>
+                    <textarea 
+                        id="inputText"
+                        class="w-full h-32 text-base p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="Type your text here..."
+                    ></textarea>
+                    
+                    <div class="flex gap-3">
+                        <button 
+                            onclick="encodeText()"
+                            class="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                        >
+                            🔒 Encode
+                        </button>
+                        <button 
+                            onclick="decodeText()"
+                            class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                        >
+                            🔓 Decode
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Output -->
+                <div class="space-y-4">
+                    <label class="block text-lg font-semibold text-gray-900 dark:text-white">
+                        Output Text
+                    </label>
+                    <textarea 
+                        id="outputText"
+                        class="w-full h-32 text-base p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                        readonly
+                        placeholder="Encoded/decoded text will appear here..."
+                    ></textarea>
+                    
+                    <button 
+                        onclick="copyOutput()"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                        📋 Copy Output
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Upload Tab Content -->
+        <div id="imageTabContent" class="tab-content hidden">
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
+                <div class="text-center space-y-4">
+                    <div class="border-2 border-dashed border-blue-300 dark:border-blue-600 rounded-lg p-8 bg-white dark:bg-gray-800">
+                        <input 
+                            type="file" 
+                            id="imageInput" 
+                            accept="image/*" 
+                            class="hidden" 
+                            onchange="handleImageUpload(event)"
+                        >
+                        <div id="imageUploadArea" onclick="document.getElementById('imageInput').click()" class="cursor-pointer">
+                            <div id="imagePreview" class="hidden mb-4">
+                                <img id="previewImg" src="" alt="Uploaded image" class="max-w-full h-48 object-contain mx-auto rounded-lg shadow-lg">
+                            </div>
+                            <div id="uploadPrompt">
+                                <svg class="mx-auto h-12 w-12 text-blue-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <p class="text-lg text-gray-600 dark:text-gray-300 mb-2">Click to upload an image</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">PNG, JPG, JPEG up to 10MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 justify-center">
+                        <button 
+                            onclick="processImage('encode')"
+                            id="imageEncodeBtn"
+                            class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            🔒 Extract & Encode
+                        </button>
+                        <button 
+                            onclick="processImage('decode')"
+                            id="imageDecodeBtn"
+                            class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            🔓 Extract & Decode
+                        </button>
+                    </div>
+                    
+                    <div id="imageProcessing" class="hidden">
+                        <div class="flex items-center justify-center space-x-2">
+                            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Extracting text from image...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results section for image tab -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                <!-- Extracted Text -->
+                <div class="space-y-4">
+                    <label class="block text-lg font-semibold text-gray-900 dark:text-white">
+                        Extracted Text
+                    </label>
+                    <textarea 
+                        id="extractedText"
+                        class="w-full h-32 text-base p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                        readonly
+                        placeholder="Extracted text from image will appear here..."
+                    ></textarea>
+                </div>
+
+                <!-- Transformed Text -->
+                <div class="space-y-4">
+                    <label class="block text-lg font-semibold text-gray-900 dark:text-white">
+                        Output Text
+                    </label>
+                    <textarea 
+                        id="transformedText"
+                        class="w-full h-32 text-base p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                        readonly
+                        placeholder="Encoded/decoded text will appear here..."
+                    ></textarea>
+                    
+                    <button 
+                        onclick="copyTransformed()"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                    >
+                        📋 Copy Transformed Text
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mirror Table (visible on both tabs) -->
+        <div class="mt-8 bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">Mirror table</h3>
+            <div class="grid grid-cols-5 gap-3 max-w-4xl mx-auto">
+                <div class="mirror-cell">a → l</div>
+                <div class="mirror-cell">b → c</div>
+                <div class="mirror-cell">c → b</div>
+                <div class="mirror-cell">d → j</div>
+                <div class="mirror-cell">e → i</div>
+                
+                <div class="mirror-cell">f → h</div>
+                <div class="mirror-cell center-letter">g → g</div>
+                <div class="mirror-cell">h → f</div>
+                <div class="mirror-cell">i → e</div>
+                <div class="mirror-cell">j → d</div>
+                
+                <div class="mirror-cell">k → s</div>
+                <div class="mirror-cell">l → a</div>
+                <div class="mirror-cell">m → z</div>
+                <div class="mirror-cell">n → x</div>
+                <div class="mirror-cell">o → w</div>
+                
+                <div class="mirror-cell">p → q</div>
+                <div class="mirror-cell">q → p</div>
+                <div class="mirror-cell">r → u</div>
+                <div class="mirror-cell">s → k</div>
+                <div class="mirror-cell">t → y</div>
+                
+                <div class="mirror-cell">u → r</div>
+                <div class="mirror-cell center-letter">v → v</div>
+                <div class="mirror-cell">w → o</div>
+                <div class="mirror-cell">x → n</div>
+                <div class="mirror-cell">y → t</div>
+                
+                <div class="mirror-cell">z → m</div>
+                <div class="grid-cols-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-1 mt-2">
+        <p class="text-gray-500 dark:text-gray-400 text-sm font-light">made by losty</p>
+    </footer>
+
+    <style>
+        .keyboard-key {
+            @apply w-8 h-8 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-center flex items-center justify-center text-sm font-mono text-gray-900 dark:text-white;
+        }
+        
+        .mirror-cell {
+            @apply p-4 bg-gray-700 dark:bg-gray-600 border border-gray-600 dark:border-gray-500 rounded-lg text-center text-lg font-mono font-semibold;
+            color: white !important;
+        }
+        
+        .center-letter {
+            @apply bg-green-200 dark:bg-green-700 font-semibold;
+            color: white !important;
+        }
+    </style>
+
+    <script>
+        // Keyboard cipher mapping
+        const cipherMap = {
+            // Top row
+            'Q': 'P', 'P': 'Q',
+            'W': 'O', 'O': 'W',
+            'E': 'I', 'I': 'E',
+            'R': 'U', 'U': 'R',
+            'T': 'Y', 'Y': 'T',
+            
+            // Middle row
+            'A': 'L', 'L': 'A',
+            'S': 'K', 'K': 'S',
+            'D': 'J', 'J': 'D',
+            'F': 'H', 'H': 'F',
+            'G': 'G', // Center - stays same
+            
+            // Bottom row
+            'Z': 'M', 'M': 'Z',
+            'X': 'N', 'N': 'X',
+            'C': 'B', 'B': 'C',
+            'V': 'V'  // Center - stays same
+        };
+
+        function transformText(text) {
+            return text.split('').map(char => {
+                // Check if the original character is uppercase or lowercase
+                const isUpperCase = char === char.toUpperCase();
+                const upperChar = char.toUpperCase();
+                
+                // Apply cipher mapping using uppercase version
+                const mappedChar = cipherMap[upperChar] || upperChar;
+                
+                // Return the mapped character in the same case as the original
+                return isUpperCase ? mappedChar : mappedChar.toLowerCase();
+            }).join('');
+        }
+
+        function encodeText() {
+            const input = document.getElementById('inputText').value;
+            const output = transformText(input);
+            document.getElementById('outputText').value = output;
+        }
+
+        function decodeText() {
+            // Decoding is the same as encoding since the cipher is symmetric
+            encodeText();
+        }
+
+        function copyOutput() {
+            const output = document.getElementById('outputText');
+            output.select();
+            output.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                
+                // Visual feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.backgroundColor = '#16a34a';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        }
+
+        function setExample(text) {
+            document.getElementById('inputText').value = text;
+            encodeText();
+        }
+
+        // Real-time encoding as user types
+        document.getElementById('inputText').addEventListener('input', function() {
+            if (this.value.trim()) {
+                encodeText();
+            } else {
+                document.getElementById('outputText').value = '';
+            }
+        });
+
+        // Image upload and OCR functionality
+        let uploadedImageFile = null;
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB.');
+                return;
+            }
+
+            uploadedImageFile = file;
+
+            // Show image preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImg = document.getElementById('previewImg');
+                const imagePreview = document.getElementById('imagePreview');
+                const uploadPrompt = document.getElementById('uploadPrompt');
+                
+                previewImg.src = e.target.result;
+                imagePreview.classList.remove('hidden');
+                uploadPrompt.classList.add('hidden');
+                
+                // Enable buttons
+                document.getElementById('imageEncodeBtn').disabled = false;
+                document.getElementById('imageDecodeBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Register handler for OCR response
+        window.Poe.registerHandler("ocr-handler", (result, context) => {
+            const msg = result.responses[0];
+            
+            if (msg.status === "error") {
+                document.getElementById('imageProcessing').classList.add('hidden');
+                alert("Error extracting text from image: " + msg.statusText);
+                return;
+            }
+            
+            if (msg.status === "complete") {
+                document.getElementById('imageProcessing').classList.add('hidden');
+                
+                // Extract text from the response
+                let extractedText = msg.content.trim();
+                
+                // Clean up the response (remove any explanatory text)
+                // Look for common patterns and extract just the text
+                const lines = extractedText.split('\n');
+                let cleanText = '';
+                
+                for (let line of lines) {
+                    // Skip lines that look like explanations
+                    if (line.toLowerCase().includes('text in the image') || 
+                        line.toLowerCase().includes('extracted text') ||
+                        line.toLowerCase().includes('the image contains') ||
+                        line.startsWith('I can see') ||
+                        line.startsWith('The text reads') ||
+                        line.startsWith('Here is the text')) {
+                        continue;
+                    }
+                    // Add non-empty lines that seem to be the actual text
+                    if (line.trim() && !line.includes(':')) {
+                        cleanText += line.trim() + ' ';
+                    }
+                }
+                
+                if (!cleanText.trim()) {
+                    // If no clean text found, use the whole response
+                    cleanText = extractedText;
+                }
+                
+                // Put extracted text in the image tab fields
+                document.getElementById('extractedText').value = cleanText.trim();
+                
+                // Apply transformation based on context
+                if (context.action === 'encode' || context.action === 'decode') {
+                    const transformed = transformText(cleanText.trim());
+                    document.getElementById('transformedText').value = transformed;
+                }
+            }
+        });
+
+        async function processImage(action) {
+            if (!uploadedImageFile) {
+                alert('Please upload an image first.');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('imageProcessing').classList.remove('hidden');
+
+            try {
+                // Send image to Claude for OCR
+                await window.Poe.sendUserMessage(
+                    "@Claude-Sonnet-4 Please extract all the text from this image and return only the text content without any explanations or descriptions.",
+                    {
+                        attachments: [uploadedImageFile],
+                        handler: "ocr-handler",
+                        stream: false,
+                        openChat: false,
+                        handlerContext: { action: action }
+                    }
+                );
+            } catch (err) {
+                document.getElementById('imageProcessing').classList.add('hidden');
+                console.error('Error processing image:', err);
+                alert('Error processing image. Please try again.');
+            }
+        }
+
+        // Tab switching functionality
+        function switchTab(tab) {
+            const textTab = document.getElementById('textTab');
+            const imageTab = document.getElementById('imageTab');
+            const textContent = document.getElementById('textTabContent');
+            const imageContent = document.getElementById('imageTabContent');
+
+            if (tab === 'text') {
+                // Activate text tab
+                textTab.classList.add('tab-active', 'border-primary', 'text-primary');
+                textTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                
+                // Deactivate image tab
+                imageTab.classList.remove('tab-active', 'border-primary', 'text-primary');
+                imageTab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                
+                // Show/hide content
+                textContent.classList.remove('hidden');
+                imageContent.classList.add('hidden');
+            } else {
+                // Activate image tab
+                imageTab.classList.add('tab-active', 'border-primary', 'text-primary');
+                imageTab.classList.remove('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                
+                // Deactivate text tab
+                textTab.classList.remove('tab-active', 'border-primary', 'text-primary');
+                textTab.classList.add('border-transparent', 'text-gray-500', 'dark:text-gray-400');
+                
+                // Show/hide content
+                imageContent.classList.remove('hidden');
+                textContent.classList.add('hidden');
+            }
+        }
+
+        // Copy function for transformed text in image tab
+        function copyTransformed() {
+            const transformedText = document.getElementById('transformedText');
+            transformedText.select();
+            transformedText.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+                
+                // Visual feedback
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                button.style.backgroundColor = '#16a34a';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.backgroundColor = '';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        }
+    </script>
+</body>
+</html>
