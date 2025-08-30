@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Mirror Keyboard Encoder (from image)</title>
+<style>
+  :root{--bg:#0f1724;--card:#fff;--muted:#6b7280}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#f3f4f6; margin:0; padding:28px; display:flex; align-items:flex-start; justify-content:center}
+  .card{width:820px; max-width:96%; background:var(--card); border-radius:10px; padding:18px; box-shadow:0 8px 30px rgba(2,6,23,0.08);}
+  h1{margin:0 0 6px 0; font-size:18px;}
+  p{margin:0 0 14px 0; color:var(--muted); font-size:13px;}
+  textarea{width:100%; min-height:90px; padding:12px; border-radius:8px; border:1px solid #e6e9ee; box-sizing:border-box; font-size:15px; resize:vertical}
+  .controls{display:flex; gap:8px; margin-top:10px; align-items:center}
+  button{padding:9px 12px; border-radius:8px; border:1px solid #d1d5db; background:white; cursor:pointer}
+  button.primary{background:#0b5fff;color:white;border-color:#0b5fff}
+  .small{font-size:13px;color:var(--muted)}
+  .mapping{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px;}
+  .map-item{background:#f8fafc;border:1px solid #eef2f7;padding:6px 8px;border-radius:6px;font-family:monospace;font-size:13px}
+  .steps{margin-top:10px; font-family:monospace; white-space:pre-wrap; background:#fff8e6; padding:10px; border-radius:6px; border:1px solid #ffedd5; color:#92400e}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Mirror Keyboard Encoder — built from your screenshot</h1>
+  <p>This mirrors a QWERTY keyboard across the vertical center line that runs through <strong>G</strong> and <strong>V</strong> (so G and V map to themselves). Example from the image: <code>HEY → FIT</code>.</p>
+
+  <label class="small" for="input">Input</label>
+  <textarea id="input" placeholder="Type text here... (e.g. HEY, hello, yss)"></textarea>
+
+  <div class="controls">
+    <button id="encodeBtn" class="primary">Encode</button>
+    <button id="decodeBtn">Decode</button>
+    <button id="swapBtn">Swap In/Out</button>
+    <button id="copyBtn">Copy Output</button>
+    <label style="margin-left:auto;" class="small"><input id="auto" type="checkbox"> Auto-encode</label>
+  </div>
+
+  <label class="small" for="output" style="margin-top:8px;display:block">Output</label>
+  <textarea id="output" readonly placeholder="Result will appear here..."></textarea>
+
+  <div id="steps" class="steps" aria-live="polite">Step-by-step mapping will appear here when you encode.</div>
+
+  <h2 style="font-size:14px;margin-top:12px">Mirror table (lowercase shown)</h2>
+  <div id="mapping" class="mapping" aria-hidden="false"></div>
+
+  <p class="small" style="margin-top:10px">Notes: Uppercase letters are preserved. Characters not in the table (numbers, punctuation) remain unchanged.</p>
+</div>
+
+<script>
+// Mirror mapping derived from the screenshot axis through G & V (lowercase)
+const mirrorMap = {
+  'q':'p','w':'o','e':'i','r':'u','t':'y','y':'t','u':'r','i':'e','o':'w','p':'q',
+  'a':'l','s':'k','d':'j','f':'h','g':'g','h':'f','j':'d','k':'s','l':'a',
+  'z':'m','x':'n','c':'b','v':'v','b':'c','n':'x','m':'z'
+};
+
+// Build mapping UI
+(function buildUI(){
+  const container = document.getElementById('mapping');
+  const keys = Object.keys(mirrorMap).sort();
+  for (const k of keys) {
+    const v = mirrorMap[k];
+    const el = document.createElement('div');
+    el.className = 'map-item';
+    el.textContent = k + ' → ' + v;
+    container.appendChild(el);
+  }
+})();
+
+function transform(text) {
+  // Use Array.from (handles multi-codepoint characters safely)
+  return Array.from(text).map(ch => {
+    const lower = ch.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(mirrorMap, lower)) {
+      let mapped = mirrorMap[lower];
+      // Preserve uppercase for ASCII letters
+      if (/[A-Z]/.test(ch)) return mapped.toUpperCase();
+      return mapped;
+    }
+    return ch; // unchanged
+  }).join('');
+}
+
+function buildSteps(text) {
+  if (!text) return '— no input —';
+  return Array.from(text).map(ch => {
+    const lower = ch.toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(mirrorMap, lower)) {
+      const mapped = mirrorMap[lower];
+      const shown = (/[A-Z]/.test(ch)) ? mapped.toUpperCase() : mapped;
+      return ch + ' → ' + shown;
+    } else {
+      return ch + ' → ' + ch + ' (unchanged)';
+    }
+  }).join('\\n');
+}
+
+// DOM
+const inputEl = document.getElementById('input');
+const outputEl = document.getElementById('output');
+const stepsEl = document.getElementById('steps');
+const encodeBtn = document.getElementById('encodeBtn');
+const decodeBtn = document.getElementById('decodeBtn');
+const copyBtn = document.getElementById('copyBtn');
+const swapBtn = document.getElementById('swapBtn');
+const auto = document.getElementById('auto');
+
+function doEncode(){
+  const txt = inputEl.value;
+  const out = transform(txt);
+  outputEl.value = out;
+  stepsEl.textContent = buildSteps(txt);
+}
+
+function doDecode(){
+  // symmetric mapping — same operation
+  doEncode();
+}
+
+encodeBtn.addEventListener('click', doEncode);
+decodeBtn.addEventListener('click', doDecode);
+
+copyBtn.addEventListener('click', ()=>{
+  outputEl.select();
+  try {
+    document.execCommand('copy');
+    copyBtn.textContent = 'Copied!';
+    setTimeout(()=> copyBtn.textContent = 'Copy Output',800);
+  } catch(e) {
+    copyBtn.textContent = 'Copy failed';
+    setTimeout(()=> copyBtn.textContent = 'Copy Output',800);
+  }
+});
+
+swapBtn.addEventListener('click', ()=>{
+  const a = inputEl.value;
+  inputEl.value = outputEl.value;
+  outputEl.value = a;
+  stepsEl.textContent = buildSteps(inputEl.value);
+});
+
+inputEl.addEventListener('input', ()=>{
+  if (auto.checked) doEncode();
+});
+
+// keyboard shortcut: Ctrl/Cmd+Enter to encode
+inputEl.addEventListener('keydown', (e)=>{
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    doEncode();
+  }
+});
+
+// initial helpful text
+stepsEl.textContent = "Ready — try the example from the screenshot: HEY → FIT\nExamples to test: HEY, hello, yss, Hello, world!";
+</script>
+</body>
+</html>
